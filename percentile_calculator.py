@@ -1,52 +1,6 @@
 import csv
 import sys
 
-def read_data(filepath):
-    try:
-        header = True
-        data = []
-        with open(filepath) as file:
-            reader = csv.reader(file, delimiter=',')
-            for row in reader:
-                if header: 
-                    header = False
-                else:
-                    data.append(float(row[4]))
-    except:
-        print("The file does not exist")
-        sys.exit(1)
-    
-    return data
-
-def calculate_percentile(data, k):
-    if k < 0 or k > 1:
-        print("p not in range [0,1]")
-        sys.exit(1)
-    else:
-        # Sort data ascending
-        data.sort()
-
-        if k == 1:
-            return data[-1]
-        elif k == 0:
-            return data[0]
-        
-        # Calculate n
-        n = len(data)
-        # Calculate i
-        i = n * k
-        
-        if i.is_integer():
-            pos = (i+i+1)/2
-            pos_rdown = int(pos)
-            pos_rup = int(pos) + 1
-            pk = (data[pos_rdown - 1] + data[pos_rup - 1])/2
-        else:
-            pos = int(i) + 1
-            pk = data[pos - 1]
-
-    return pk
-
 def parse_args():
 
     if len(sys.argv) != 5:
@@ -73,6 +27,56 @@ def parse_args():
     return filepath, float(k)
 
 
+def read_data(filepath):
+    try:
+        header = True
+        data = []
+        trip_distance = []
+        with open(filepath) as file:
+            reader = csv.reader(file, delimiter=',')
+            for row in reader:
+                if header: 
+                    header = False
+                else:
+                    data.append(row)
+                    trip_distance.append(float(row[4]))
+    except:
+        print("The file does not exist")
+        sys.exit(1)
+    
+        return data, trip_distance
+
+def calculate_percentile(data, k):
+    if k < 0 or k > 1:
+        print("p not in range [0,1]")
+        sys.exit(1)
+    else:
+        # Sort data ascending
+        sorted_data = sorted(enumerate(data), key=lambda i: i[1])
+        # Calculate n
+        n = len(sorted_data)
+        # Calculate i
+        i = n * k       
+
+        if i.is_integer():
+            pos = int((i+i+1)/2) + 1
+        else:
+            pos = int(i) + 1
+
+        data_percentile = sorted_data[pos-1:]
+    
+    percentile_pos = [d[0] for d in data_percentile]
+    return percentile_pos
+
+def print_write_results(data, pos):
+    percentile_data = [d for i, d in enumerate(data) if i in pos]
+    
+    print(percentile_data)
+
+    with open('output.csv', 'w', newline='') as f:
+        writer = csv.writer(f)        
+        writer.writerows(percentile_data)
+
 def main():
 
     try:
@@ -84,14 +88,10 @@ def main():
     
     filepath, k = parse_args()
 
-    data = read_data(filepath)
-    pk = calculate_percentile(data, k)
-    print("Pk = " + str(pk))
+    data, trip_distance = read_data(filepath)
+    percentile_pos = calculate_percentile(trip_distance, k)
+    print_write_results(data, percentile_pos)
 
 if __name__ == '__main__':
     main()
-
-
-
-#/Users/raquelblanco/Downloads/yellow_tripdata_2022-01.csv
 
